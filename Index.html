@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E!BA Venue Management</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+  <style>
+    :root {
+      --e-red:    #870101; --e-blue:   #0F6A8C; --e-yellow: #F1A01B;
+      --e-grey:   #666666; --e-green:  #008148; --e-navy:   #0e313e;
+      --e-red-light:#faeaea; --e-blue-light:#e3f2f8; --e-yellow-light:#fef6e4;
+      --e-grey-light:#f0f0f0; --e-green-light:#e0f2ea; --e-navy-light:#e3eaed;
+      --e-orange: #c45e00; --e-orange-light: #fdf0e6;
+      --e-purple: #6f42c1; --e-purple-light: #f0ebff;
+      --e-teal:   #0d7377; --e-teal-light:   #e0f4f5;
+    }
+    body { background:#f4f6f8; font-family:'Segoe UI',sans-serif; }
+    .navbar { background:var(--e-navy)!important; border-bottom:3px solid var(--e-green); }
+    .navbar-brand,.navbar-text { color:#fff!important; }
+    .navbar-brand i { color:var(--e-yellow); }
+
+    /* ── Pipeline ── */
+    .pipeline { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:1.5rem; }
+    .pipeline-step {
+      flex:1; min-width:90px; padding:8px 5px; border-radius:8px;
+      text-align:center; font-size:.72rem; font-weight:600;
+      background:#dee2e6; color:#495057; border:2px solid transparent;
+      cursor:pointer; transition:all .2s;
+    }
+    .pipeline-step .badge-count {
+      display:inline-block; background:rgba(0,0,0,.13);
+      border-radius:50px; padding:1px 7px; font-size:.68rem; margin-top:3px;
+    }
+    .pipeline-step.active { border-color:currentColor; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+
+    .step-All              { background:var(--e-navy-light);    color:var(--e-navy);   }
+    .step-Negotiation      { background:var(--e-grey-light);    color:var(--e-grey);   }
+    .step-Financial-Review { background:var(--e-yellow-light);  color:#b87400;         }
+    .step-Contract-Signing { background:var(--e-blue-light);    color:var(--e-blue);   }
+    .step-EFRIS-Invoice    { background:var(--e-orange-light);  color:var(--e-orange); }
+    .step-Payment          { background:var(--e-red-light);     color:var(--e-red);    }
+    .step-Venue-Mgt        { background:var(--e-purple-light);  color:var(--e-purple); }
+    .step-Closed-Out       { background:var(--e-green-light);   color:var(--e-green);  }
+    .step-Cancelled        { background:#faeaea;                color:var(--e-red);    }
+    .step-Rejected         { background:#faeaea;                color:var(--e-red);    }
+
+    .badge-Negotiation      { background:var(--e-grey);    color:#fff; }
+    .badge-Financial-Review { background:#b87400;           color:#fff; }
+    .badge-Contract-Signing { background:var(--e-blue);    color:#fff; }
+    .badge-EFRIS-Invoice    { background:var(--e-orange);  color:#fff; }
+    .badge-Payment          { background:var(--e-red);     color:#fff; }
+    .badge-Venue-Mgt        { background:var(--e-purple);  color:#fff; }
+    .badge-Closed-Out       { background:var(--e-green);   color:#fff; }
+    .badge-Cancelled        { background:var(--e-red);     color:#fff; }
+    .badge-Rejected         { background:var(--e-red);     color:#fff; }
+
+    /* ── Cards ── */
+    .venue-card { cursor:pointer; border:2px solid transparent; transition:all .2s; border-radius:12px!important; }
+    .venue-card:hover   { border-color:var(--e-blue); transform:translateY(-2px); box-shadow:0 4px 12px rgba(15,106,140,.15); }
+    .venue-card.selected { border-color:var(--e-green); background:var(--e-green-light); }
+    .venue-card .card-body { padding:10px 14px; }
+    .v-name { font-size:.88rem; font-weight:700; line-height:1.2; }
+    .v-meta { font-size:.72rem; color:#666; margin-top:2px; }
+    .v-badge { font-size:.65rem; }
+    .v-price { font-size:.72rem; color:var(--e-navy); font-weight:600; }
+
+    /* ── Detail panel ── */
+    #detail-panel { position:sticky; top:80px; }
+    .stage-btn { border-radius:50px!important; font-weight:600; }
+
+    .btn-advance-lg {
+      width:100%; padding:13px; border:none; border-radius:10px;
+      background:var(--e-green); color:#fff; font-weight:700;
+      cursor:pointer; transition:all .2s; display:flex; align-items:center;
+      justify-content:center; gap:8px; font-size:1rem;
+    }
+    .btn-advance-lg:hover { background:#006a3a; box-shadow:0 4px 12px rgba(0,129,72,.25); }
+    .btn-advance-lg.btn-locked { background:#6c757d; cursor:not-allowed; opacity:.6; }
+    .btn-advance-lg.btn-locked:hover { box-shadow:none; }
+
+    .btn-save-sm {
+      padding:8px 16px; border:2px solid var(--e-blue); background:transparent;
+      color:var(--e-blue); border-radius:8px; font-weight:600; cursor:pointer;
+      transition:all .2s; font-size:.85rem;
+    }
+    .btn-save-sm:hover { background:var(--e-blue); color:#fff; }
+
+    .btn-secondary-sm {
+      padding:8px 12px; border:2px solid var(--e-red); background:transparent;
+      color:var(--e-red); border-radius:8px; font-weight:600; cursor:pointer;
+      transition:all .2s; font-size:.85rem;
+    }
+    .btn-secondary-sm:hover { background:var(--e-red); color:#fff; }
+
+    .btn-upload { background:var(--e-blue); color:#fff; border:none; border-radius:50px!important; font-weight:600; }
+    .btn-upload:hover { background:#0a5070; color:#fff; }
+
+    /* ── Deborah trigger button ── */
+    .btn-trigger-approval {
+      padding:9px 16px; border:2px solid #b87400; background:var(--e-yellow-light);
+      color:#7a4e00; border-radius:8px; font-weight:600; cursor:pointer;
+      transition:all .2s; font-size:.85rem; width:100%; display:flex;
+      align-items:center; justify-content:center; gap:6px; margin-top:8px;
+    }
+    .btn-trigger-approval:hover { background:#b87400; color:#fff; }
+
+    /* ── Sticky action bar ── */
+    .detail-action-bar {
+      position:sticky; bottom:0; background:#fff;
+      border-top:2px solid #dee2e6; padding:12px 16px;
+      border-radius:0 0 12px 12px; z-index:100;
+    }
+
+    .field-current { border-color:var(--e-green)!important; border-width:2px!important; }
+    .badge-current-stage { background:var(--e-green); color:#fff; font-size:.7rem; padding:2px 8px; border-radius:50px; margin-left:6px; }
+    .field-optional-note { font-size:.7rem; color:var(--e-grey); margin-left:6px; font-style:italic; }
+
+    .contract-link-display { background:var(--e-green-light); border:1px solid var(--e-green); border-radius:8px; padding:8px 12px; font-size:.82rem; }
+    .efris-link-display    { background:var(--e-blue-light);  border:1px solid var(--e-blue);  border-radius:8px; padding:8px 12px; font-size:.82rem; }
+
+    /* Quality status badges */
+    .quality-Exceeds { background:#d4edda; color:#155724; border:1px solid #c3e6cb; padding:3px 10px; border-radius:50px; font-size:.78rem; font-weight:700; }
+    .quality-Meets   { background:#cce5ff; color:#004085; border:1px solid #b8daff; padding:3px 10px; border-radius:50px; font-size:.78rem; font-weight:700; }
+    .quality-Below   { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:3px 10px; border-radius:50px; font-size:.78rem; font-weight:700; }
+
+    /* ── PO Quality Check — stage-card style ── */
+    .po-stage-card {
+      border-radius:12px; overflow:hidden;
+      border:2px solid var(--e-green); margin-top:12px;
+      box-shadow:0 2px 8px rgba(0,129,72,.1);
+    }
+    .po-stage-header {
+      background:linear-gradient(135deg,#005c35 0%,var(--e-green) 100%);
+      color:#fff; padding:10px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .po-stage-header .po-title {
+      font-size:.85rem; font-weight:700;
+      display:flex; align-items:center; gap:6px; margin:0;
+    }
+    .po-stage-header .po-optional { font-size:.68rem; opacity:.82; font-weight:400; }
+    .po-stage-body { background:#fff; padding:14px 16px; }
+
+    /* ── PO Quality Check panel ── */
+    .po-check-panel {
+      border:2px solid var(--e-green); border-radius:12px;
+      background:var(--e-green-light); padding:14px 16px; margin-top:12px;
+    }
+    .po-check-panel .po-title {
+      font-size:.85rem; font-weight:700; color:var(--e-green);
+      display:flex; align-items:center; gap:6px; margin-bottom:12px;
+    }
+    .po-rating-group { margin-bottom:10px; }
+    .po-rating-group label { font-size:.78rem; font-weight:600; color:#333; display:block; margin-bottom:4px; }
+    .po-rating-btns { display:flex; gap:4px; flex-wrap:wrap; }
+    .po-rating-btn {
+      padding:5px 10px; border-radius:20px; border:2px solid #ccc;
+      background:#fff; font-size:.72rem; font-weight:600; cursor:pointer;
+      transition:all .15s; color:#555;
+    }
+    .po-rating-btn:hover { border-color:var(--e-green); color:var(--e-green); }
+    .po-rating-btn.active-Poor        { border-color:#870101; background:#faeaea; color:#870101; }
+    .po-rating-btn.active-Fair        { border-color:#b87400; background:#fef6e4; color:#7a4e00; }
+    .po-rating-btn.active-Good        { border-color:#0F6A8C; background:#e3f2f8; color:#0F6A8C; }
+    .po-rating-btn.active-Excellent   { border-color:#008148; background:#e0f2ea; color:#008148; }
+    .po-check-existing {
+      background:#fff; border:1px solid #c3e6cb; border-radius:8px;
+      padding:8px 12px; font-size:.75rem; color:#555; margin-bottom:10px;
+    }
+    .btn-po-save {
+      background:var(--e-green); color:#fff; border:none;
+      border-radius:8px; padding:8px 18px; font-weight:700;
+      font-size:.85rem; cursor:pointer; width:100%; margin-top:8px;
+      transition:all .2s;
+    }
+    .btn-po-save:hover { background:#006a3a; }
+    .po-toggle-btn {
+      background:transparent; border:2px solid var(--e-green);
+      color:var(--e-green); border-radius:20px; padding:4px 12px;
+      font-size:.72rem; font-weight:700; cursor:pointer; transition:all .15s;
+    }
+    .po-toggle-btn:hover { background:var(--e-green); color:#fff; }
+
+    /* ── EFRIS status radio ── */
+    .efris-status-group { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .efris-status-btn {
+      flex:1; min-width:120px; padding:10px; border-radius:10px;
+      border:2px solid #dee2e6; background:#fff; cursor:pointer;
+      text-align:center; font-size:.8rem; font-weight:600;
+      transition:all .15s; color:#555;
+    }
+    .efris-status-btn:hover { border-color:var(--e-blue); color:var(--e-blue); }
+    .efris-status-btn.active-has    { border-color:var(--e-green); background:var(--e-green-light); color:var(--e-green); }
+    .efris-status-btn.active-hasnt  { border-color:var(--e-orange); background:var(--e-orange-light); color:var(--e-orange); }
+
+    /* ── Upload phone button ── */
+    .btn-upload-phone {
+      display:flex; align-items:center; gap:8px; width:100%;
+      padding:12px 16px; border-radius:10px; border:none;
+      background:var(--e-blue); color:#fff; font-weight:700;
+      font-size:.9rem; cursor:pointer; transition:all .2s; justify-content:center;
+    }
+    .btn-upload-phone:hover { background:#0a5070; }
+    .btn-upload-phone i { font-size:1.2rem; }
+
+    #geo-summary .card { border-left:4px solid var(--e-blue)!important; }
+    .prog-high { background-color:var(--e-green)!important; }
+    .prog-mid  { background-color:var(--e-yellow)!important; }
+    .prog-low  { background-color:var(--e-red)!important; }
+
+    .empty-state { text-align:center; padding:3rem 1rem; color:#adb5bd; }
+    .empty-state i { font-size:3rem; display:block; margin-bottom:1rem; }
+    #loading-overlay { position:fixed; inset:0; background:rgba(255,255,255,.88); display:flex; align-items:center; justify-content:center; z-index:9999; }
+    .spinner-brand { width:60px; height:60px; border:6px solid #dee2e6; border-top-color:var(--e-green); border-radius:50%; animation:spin 1s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #toast-box { position:fixed; bottom:1.5rem; right:1.5rem; z-index:10000; min-width:260px; }
+    #demo-banner { background:var(--e-yellow-light); border-bottom:2px solid var(--e-yellow); padding:6px 16px; font-size:.82rem; text-align:center; display:none; }
+
+    /* ── Cancel modal ── */
+    #cancel-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:10500; }
+    #cancel-modal-overlay.open { display:flex; }
+    #cancel-modal { background:#fff; border-radius:14px; padding:2rem; width:100%; max-width:480px; box-shadow:0 8px 40px rgba(0,0,0,.28); }
+    #cancel-modal h6 { color:var(--e-red); font-weight:700; }
+
+    /* ── Mobile ── */
+    @media(max-width:991px){
+      #detail-panel { position:static; margin-top:1rem; }
+      #venue-list-col { display:block; width:100%; }
+      #detail-col { display:none; width:100%; }
+      #detail-col.mobile-open { display:block; }
+      #venue-list-col.mobile-hidden { display:none; }
+      #mobile-back-btn { display:flex !important; }
+      .btn-advance-lg { font-size:.95rem; padding:12px; }
+      #detail-panel-inner { max-height:none; overflow-y:visible; padding-bottom:80px; }
+    }
+    #mobile-back-btn { display:none; }
+    #venue-count { font-size:.75rem; color:var(--e-grey); margin-bottom:8px; }
+  
+    /* ── File upload area ── */
+    .upload-area {
+      border:2px dashed #adb5bd; border-radius:10px; padding:18px 16px;
+      text-align:center; background:#fafbfc; cursor:pointer;
+      transition:all .2s; position:relative;
+    }
+    .upload-area:hover, .upload-area.drag-over {
+      border-color:var(--e-blue); background:var(--e-blue-light);
+    }
+    .upload-area input[type=file] {
+      position:absolute; inset:0; width:100%; height:100%;
+      opacity:0; cursor:pointer; z-index:2;
+    }
+    .upload-area .upload-icon { font-size:1.8rem; color:#adb5bd; display:block; margin-bottom:6px; }
+    .upload-area .upload-label { font-size:.82rem; color:#555; font-weight:600; }
+    .upload-area .upload-sub   { font-size:.72rem; color:#adb5bd; margin-top:2px; }
+    .upload-area.uploading { border-color:var(--e-green); background:var(--e-green-light); }
+    .upload-progress { height:4px; border-radius:2px; background:#dee2e6; margin-top:8px; overflow:hidden; display:none; }
+    .upload-progress-bar { height:100%; background:var(--e-green); width:0; transition:width .3s; }
+
+    /* ── Payment toggle ── */
+    .payment-toggle { display:flex; gap:10px; margin-bottom:8px; }
+    .payment-btn {
+      flex:1; padding:14px 10px; border-radius:10px; border:2px solid #dee2e6;
+      background:#fff; cursor:pointer; text-align:center; transition:all .2s;
+      font-weight:700; font-size:.88rem; color:#555;
+    }
+    .payment-btn i { display:block; font-size:1.4rem; margin-bottom:4px; }
+    .payment-btn.active-confirmed { border-color:var(--e-green); background:var(--e-green-light); color:var(--e-green); }
+    .payment-btn.active-pending   { border-color:#b87400; background:var(--e-yellow-light); color:#7a4e00; }
+    .payment-btn:hover { border-color:var(--e-blue); }
+
+    /* ── Weekly review accordion ── */
+    .week-tabs { display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
+    .week-tab {
+      flex:1; min-width:60px; padding:7px 4px; border-radius:8px;
+      border:2px solid #dee2e6; background:#fff; cursor:pointer;
+      text-align:center; font-size:.75rem; font-weight:700; color:#666;
+      transition:all .15s; position:relative;
+    }
+    .week-tab:hover { border-color:var(--e-blue); color:var(--e-blue); }
+    .week-tab.active { border-color:var(--e-navy); background:var(--e-navy); color:#fff; }
+    .week-tab.has-data::after {
+      content:''; position:absolute; top:4px; right:4px;
+      width:7px; height:7px; border-radius:50%; background:var(--e-green);
+    }
+    .week-tab.has-poor::after { background:var(--e-red); }
+    .week-panel { display:none; }
+    .week-panel.active { display:block; }
+    .week-quality-btns { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
+    .week-quality-btn {
+      flex:1; min-width:65px; padding:8px 4px; border-radius:8px;
+      border:2px solid #dee2e6; background:#fff; cursor:pointer;
+      text-align:center; font-size:.75rem; font-weight:700; color:#555;
+      transition:all .15s;
+    }
+    .week-quality-btn.sel-Poor      { border-color:var(--e-red);    background:var(--e-red-light);    color:var(--e-red);    }
+    .week-quality-btn.sel-Fair      { border-color:#b87400;          background:var(--e-yellow-light); color:#7a4e00;         }
+    .week-quality-btn.sel-Good      { border-color:var(--e-blue);    background:var(--e-blue-light);   color:var(--e-blue);   }
+    .week-quality-btn.sel-Excellent { border-color:var(--e-green);   background:var(--e-green-light);  color:var(--e-green);  }
+    .btn-week-save {
+      width:100%; padding:9px; border:none; border-radius:8px;
+      background:var(--e-navy); color:#fff; font-weight:700;
+      font-size:.82rem; cursor:pointer; margin-top:8px; transition:all .2s;
+      display:flex; align-items:center; justify-content:center; gap:6px;
+    }
+    .btn-week-save:hover { background:var(--e-blue); }
+    .week-saved-badge {
+      display:inline-flex; align-items:center; gap:4px;
+      background:var(--e-green-light); color:var(--e-green);
+      border:1px solid var(--e-green); border-radius:20px;
+      padding:2px 10px; font-size:.72rem; font-weight:700; margin-bottom:8px;
+    }
+
+  </style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="text-center">
+    <div class="spinner-brand mx-auto mb-3"></div>
+    <p class="text-muted fw-semibold" id="loading-msg">Connecting to Sourced_Venues_1…</p>
+  </div>
+</div>
+
+<div id="demo-banner">
+  <i class="bi bi-info-circle-fill text-warning me-1"></i>
+  <strong>Preview mode</strong> — showing sample data. Deploy as a Web App to connect to your live sheet.
+</div>
+
+<nav class="navbar navbar-expand-lg shadow-sm sticky-top">
+  <div class="container-fluid">
+    <span class="navbar-brand fw-bold fs-5">
+      <i class="bi bi-building-check me-2" style="color:var(--e-yellow)"></i>E!BA Venue Management
+    </span>
+    <span class="navbar-text ms-auto small opacity-75">Bootcamp Cycle 4 · Sourced_Venues_1</span>
+  </div>
+</nav>
+
+<div class="container-lg py-4">
+
+  <!-- Filter bar -->
+  <div class="row g-2 mb-3 align-items-center">
+    <div class="col-12 col-md-3">
+      <div class="input-group shadow-sm">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input id="search-input" type="text" class="form-control border-start-0" placeholder="Search venue or contractor…" oninput="filterVenues()" />
+        <button class="btn btn-outline-secondary" onclick="clearSearch()"><i class="bi bi-x-lg"></i></button>
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <select id="district-filter" class="form-select form-select-sm shadow-sm" onchange="onDistrictChange()">
+        <option value="">All Districts</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select id="subcounty-filter" class="form-select form-select-sm shadow-sm" onchange="onSubcountyChange()">
+        <option value="">All Sub-Counties</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select id="parish-filter" class="form-select form-select-sm shadow-sm" onchange="filterVenues()">
+        <option value="">All Parishes</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <select id="contractor-filter" class="form-select form-select-sm shadow-sm" onchange="filterVenues()">
+        <option value="">All Contractors</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-1">
+      <select id="stage-filter" class="form-select form-select-sm shadow-sm" onchange="filterVenues()">
+        <option value="">All Stages</option>
+        <option>Negotiation</option>
+        <option>Financial Review</option>
+        <option>Contract Signing</option>
+        <option>EFRIS Invoice</option>
+        <option>Payment</option>
+        <option>Venue Mgt</option>
+        <option>Closed Out</option>
+        <option>Cancelled</option>
+        <option>Rejected</option>
+      </select>
+    </div>
+    <div class="col-6 col-md d-flex align-items-center gap-2 justify-content-end">
+      <button class="btn btn-sm shadow-sm flex-shrink-0" id="clear-all-btn" style="display:none;border:2px solid var(--e-red);color:var(--e-red);background:transparent"
+              onmouseover="this.style.background='var(--e-red)';this.style.color='#fff'"
+              onmouseout="this.style.background='transparent';this.style.color='var(--e-red)'"
+              onclick="clearAllFilters()">
+        <i class="bi bi-funnel-fill me-1"></i>Clear
+      </button>
+      <button class="btn btn-sm btn-outline-secondary shadow-sm flex-shrink-0" onclick="reloadData()" title="Refresh">
+        <i class="bi bi-arrow-clockwise"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="geo-summary" class="mb-3" style="display:none"></div>
+  <div class="pipeline" id="pipeline-bar"></div>
+
+  <!-- Mobile back button -->
+  <button id="mobile-back-btn" class="btn btn-sm mb-2"
+    style="border:2px solid var(--e-navy);color:var(--e-navy);background:transparent;border-radius:50px"
+    onclick="mobileBack()">
+    <i class="bi bi-arrow-left me-1"></i>Back to venues
+  </button>
+
+  <div class="row g-3">
+    <div class="col-lg-5" id="venue-list-col">
+      <div id="venue-count"></div>
+      <div id="venue-list"></div>
+    </div>
+    <div class="col-lg-7" id="detail-col">
+      <div id="detail-panel">
+        <div class="empty-state card shadow-sm border-0">
+          <i class="bi bi-hand-index-thumb"></i>
+          <p class="fw-semibold">Select a venue to manage it</p>
+          <p class="small">Tap any card to view details and advance its stage.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-box"></div>
+
+<!-- Cancel/Reject modal -->
+<div id="cancel-modal-overlay" onclick="closeCancelModal(event)">
+  <div id="cancel-modal" onclick="event.stopPropagation()">
+    <h6><i class="bi bi-x-octagon-fill me-2"></i><span id="cancel-modal-title">Cancel Venue</span></h6>
+    <p class="text-muted small mb-3" id="cancel-modal-sub">This will be recorded with your name and date.</p>
+    <label class="form-label fw-semibold small">Reason <span class="text-danger">*</span></label>
+    <textarea id="cancel-reason" class="form-control mb-3" rows="3" placeholder="Briefly explain why…"></textarea>
+    <div class="d-flex gap-2 justify-content-end flex-wrap">
+      <button class="btn btn-outline-secondary" onclick="closeCancelModal()">Go back</button>
+      <button id="cancel-confirm-btn" class="btn text-white fw-semibold stage-btn" style="background:var(--e-red)" onclick="confirmCancel()">
+        <i class="bi bi-x-octagon me-1"></i><span id="cancel-confirm-label">Confirm Cancel</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  MOCK — preview mode (replaced by real GAS when deployed)
+// ════════════════════════════════════════════════════════════
+(function(){
+  if (typeof google !== 'undefined') return;
+  document.getElementById('demo-banner').style.display = 'block';
+  var STAGES_M = ['Negotiation','Financial Review','Contract Signing','EFRIS Invoice','Payment','Venue Mgt','Closed Out'];
+  var MOCK_GEO = {
+    'bugweri':  { 'buyanga': ['bumoozi','namabaale'], 'busembatia_town_council': ['busembatia_market_ward','south_ward'] },
+    'iganga':   { 'nakalama': ['nakalama_a','nakalama_b'], 'kiyunga': ['kiyunga_central','nalwire'] }
+  };
+  var MOCK_DISTRICTS = Object.keys(MOCK_GEO);
+  function makeMock(i) {
+    var stage = STAGES_M[i % STAGES_M.length];
+    var id = 'V' + String(i+1).padStart(3,'0');
+    var dist = MOCK_DISTRICTS[i % MOCK_DISTRICTS.length];
+    var scs  = Object.keys(MOCK_GEO[dist]);
+    var sc   = scs[i % scs.length];
+    var pars = MOCK_GEO[dist][sc];
+    return {
+      'Venue_ID': id, 'ID': id,
+      'venue_name': 'Venue ' + (i+1),
+      'Contractor': 'Contractor ' + String.fromCharCode(65 + (i%26)),
+      'Contractor Email': 'contractor'+i+'@example.com',
+      'district': dist, 'subcounty': sc, 'parish': pars[i%pars.length],
+      'Status': stage,
+      'Negotiation Notes': 'Terms agreed with venue owner.',
+      'Agreed Price': 850000 + i*50000,
+      'Financial Review Notes': stage !== 'Negotiation' ? 'Price verified.' : '',
+      'Financial Review Date':  stage !== 'Negotiation' ? '2026-02-10' : '',
+      'Contract Link': ['Contract Signing','EFRIS Invoice','Payment','Venue Mgt','Closed Out'].indexOf(stage)>-1 ? 'https://drive.google.com/mock-contract-'+id : '',
+      'EFRIS Invoice Status': stage==='EFRIS Invoice'?'Has EFRIS Invoice':'',
+      'EFRIS Invoice Link': ['Payment','Venue Mgt','Closed Out'].indexOf(stage)>-1 ? 'https://drive.google.com/mock-efris-'+id : '',
+      'Payment Confirmed By': ['Venue Mgt','Closed Out'].indexOf(stage)>-1 ? 'contractor@example.com' : '',
+      'Venue Quality Status': stage==='Closed Out'?'Meets':'',
+      'Payment Status':'','PO Training Room':'','PO Washrooms':'','PO Accessibility':'','PO General Environment':'','PO Comments':'','PO Check Date':'','PO Check By':'',
+      'Week 1 Quality':'','Week 1 Notes':'','Week 1 Date':'','Week 1 By':'',
+      'Week 2 Quality':'','Week 2 Notes':'','Week 2 Date':'','Week 2 By':'',
+      'Week 3 Quality':'','Week 3 Notes':'','Week 3 Date':'','Week 3 By':'',
+      'Week 4 Quality':'','Week 4 Notes':'','Week 4 Date':'','Week 4 By':''
+    };
+  }
+  var MOCK_DATA = [];
+  for (var i = 0; i < 7; i++) MOCK_DATA.push(makeMock(i));
+
+  window.google = { script: { run: {
+    _s: null, _f: null,
+    withSuccessHandler: function(cb){ this._s=cb; return this; },
+    withFailureHandler: function(cb){ this._f=cb; return this; },
+    getData: function(){
+      var self=this; setTimeout(function(){ self._s && self._s(MOCK_DATA); },500);
+    },
+    getCurrentUser: function(){
+      var self=this; setTimeout(function(){
+        self._s && self._s({email:'deborah.amulen@experienceeducate.org',isApprover:true,isDeborah:true});
+      },100);
+    },
+    updateVenueStatus: function(id,updates){
+      var self=this;
+      var v=MOCK_DATA.find(function(x){ return x['Venue_ID']===id; });
+      if(v) Object.assign(v,updates);
+      setTimeout(function(){ self._s && self._s({success:true,permissionDenied:false,message:'Mock save OK'}); },300);
+    },
+    uploadInvoiceFile: function(id,b64,name,mime){
+      var self=this;
+      setTimeout(function(){ self._s&&self._s({success:true,fileUrl:'https://drive.google.com/mock-invoice-'+id,message:'Mock OK'}); },600);
+    },
+    uploadContractFile: function(id,b64,name,mime){
+      var self=this;
+      setTimeout(function(){ self._s&&self._s({success:true,fileUrl:'https://drive.google.com/mock-contract-'+id,message:'Mock OK'}); },600);
+    },
+    saveWeeklyReview: function(id,week,data){
+      var self=this;
+      var v=MOCK_DATA.find(function(x){ return x['Venue_ID']===id; });
+      if(v){ v['Week '+week+' Quality']=data.quality; v['Week '+week+' Notes']=data.notes; }
+      setTimeout(function(){ self._s&&self._s({success:true,message:'Mock week review saved'}); },300);
+    },
+    savePOCheck: function(id,data){
+      var self=this;
+      var v=MOCK_DATA.find(function(x){ return x['Venue_ID']===id; });
+      if(v) Object.assign(v,data);
+      setTimeout(function(){ self._s && self._s({success:true,message:'Mock PO check saved'}); },300);
+    },
+    requestFinancialApproval: function(id,name){
+      var self=this;
+      setTimeout(function(){ self._s && self._s({success:true,message:'Mock approval request sent'}); },300);
+    },
+    cancelVenue: function(id,action,reason){
+      var self=this;
+      var v=MOCK_DATA.find(function(x){ return x['Venue_ID']===id; });
+      if(v){ v['Status']=action; v['Cancellation Reason']=reason; }
+      setTimeout(function(){ self._s && self._s({success:true,permissionDenied:false,message:'Mock cancel OK'}); },300);
+    }
+  }}};
+})();
+
+// ════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════
+var allVenues       = [];
+var filteredVenues  = [];
+var selectedVenueId = null;
+var currentUser     = { email:'', isApprover:false, isDeborah:false };
+var pendingCancel   = { action:'', venueId:'' };
+// PO ratings state
+var poRatings = { 'PO Training Room':'', 'PO Washrooms':'', 'PO Accessibility':'', 'PO General Environment':'' };
+
+var COL_DISTRICT  = 'district';
+var COL_SUBCOUNTY = 'subcounty';
+var COL_PARISH    = 'parish';
+
+var STAGES       = ['Negotiation','Financial Review','Contract Signing','EFRIS Invoice','Payment','Venue Mgt','Closed Out'];
+var CANCEL_STAGES = ['Cancelled','Rejected'];
+
+function stageCls(s){ return s.replace(/ /g,'-'); }
+
+var STAGE_ICONS = {
+  'Negotiation':      'bi-chat-dots',
+  'Financial Review': 'bi-currency-dollar',
+  'Contract Signing': 'bi-file-earmark-check',
+  'EFRIS Invoice':    'bi-receipt-cutoff',
+  'Payment':          'bi-credit-card',
+  'Venue Mgt':        'bi-clipboard2-pulse',
+  'Closed Out':       'bi-patch-check',
+  'Cancelled':        'bi-x-circle',
+  'Rejected':         'bi-slash-circle'
+};
+
+var STAGE_GATE = {};
+
+// ════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════
+window.onload = function(){ loadData(); };
+
+function loadData(){
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('loading-msg').textContent = 'Connecting to Sourced_Venues_1…';
+  google.script.run
+    .withSuccessHandler(function(u){
+      currentUser = u || {email:'',isApprover:false,isDeborah:false};
+      google.script.run
+        .withSuccessHandler(onDataLoaded)
+        .withFailureHandler(onError)
+        .getData();
+    })
+    .withFailureHandler(function(err){ onError(err); })
+    .getCurrentUser();
+}
+
+function reloadData(){
+  selectedVenueId = null;
+  document.getElementById('detail-panel').innerHTML =
+    '<div class="empty-state card shadow-sm border-0"><i class="bi bi-hand-index-thumb"></i>' +
+    '<p class="fw-semibold">Select a venue to manage it</p></div>';
+  loadData();
+}
+
+function onDataLoaded(venues){
+  document.getElementById('loading-overlay').style.display = 'none';
+  allVenues = venues || [];
+  populateGeoFilters();
+  filterVenues();
+}
+
+function onError(err){
+  document.getElementById('loading-overlay').style.display = 'none';
+  showToast('Error: '+(err.message||err),'danger');
+}
+
+// ════════════════════════════════════════════════════════════
+//  GEO FILTERS
+// ════════════════════════════════════════════════════════════
+function formatGeoLabel(str){
+  return String(str||'').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});
+}
+function populateGeoFilters(){
+  var savedD=document.getElementById('district-filter').value;
+  var savedSC=document.getElementById('subcounty-filter').value;
+  var savedP=document.getElementById('parish-filter').value;
+  var districts=[];
+  allVenues.forEach(function(v){
+    var d=String(v[COL_DISTRICT]||'').trim();
+    if(d && districts.indexOf(d)===-1) districts.push(d);
+  });
+  districts.sort();
+  var dSel=document.getElementById('district-filter');
+  dSel.innerHTML='<option value="">All Districts</option>';
+  districts.forEach(function(d){
+    var o=document.createElement('option'); o.value=d; o.textContent=formatGeoLabel(d);
+    if(d===savedD) o.selected=true; dSel.appendChild(o);
+  });
+  populateSubcountyFilter(dSel.value,savedSC);
+  populateParishFilter(dSel.value,document.getElementById('subcounty-filter').value,savedP);
+  populateContractorFilter();
+}
+function populateSubcountyFilter(district,preserveVal){
+  var scs=[];
+  allVenues.forEach(function(v){
+    var matchD=!district||String(v[COL_DISTRICT]||'').trim()===district;
+    var sc=String(v[COL_SUBCOUNTY]||'').trim();
+    if(matchD&&sc&&scs.indexOf(sc)===-1) scs.push(sc);
+  });
+  scs.sort();
+  var sel=document.getElementById('subcounty-filter');
+  var saved=preserveVal!==undefined?preserveVal:sel.value;
+  sel.innerHTML='<option value="">All Sub-Counties</option>';
+  scs.forEach(function(sc){
+    var o=document.createElement('option'); o.value=sc; o.textContent=formatGeoLabel(sc);
+    if(sc===saved) o.selected=true; sel.appendChild(o);
+  });
+}
+function populateParishFilter(district,subcounty,preserveVal){
+  var ps=[];
+  allVenues.forEach(function(v){
+    var matchD=!district||String(v[COL_DISTRICT]||'').trim()===district;
+    var matchSC=!subcounty||String(v[COL_SUBCOUNTY]||'').trim()===subcounty;
+    var p=String(v[COL_PARISH]||'').trim();
+    if(matchD&&matchSC&&p&&ps.indexOf(p)===-1) ps.push(p);
+  });
+  ps.sort();
+  var sel=document.getElementById('parish-filter');
+  var saved=preserveVal!==undefined?preserveVal:sel.value;
+  sel.innerHTML='<option value="">All Parishes</option>';
+  ps.forEach(function(p){
+    var o=document.createElement('option'); o.value=p; o.textContent=formatGeoLabel(p);
+    if(p===saved) o.selected=true; sel.appendChild(o);
+  });
+}
+function populateContractorFilter(){
+  var cs=[];
+  allVenues.forEach(function(v){
+    var c=String(v['Contractor']||v['Contractor Name']||'').trim();
+    if(c&&cs.indexOf(c)===-1) cs.push(c);
+  });
+  cs.sort();
+  var sel=document.getElementById('contractor-filter');
+  var saved=sel.value;
+  sel.innerHTML='<option value="">All Contractors</option>';
+  cs.forEach(function(c){
+    var o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(c===saved) o.selected=true; sel.appendChild(o);
+  });
+}
+function onDistrictChange(){
+  var d=document.getElementById('district-filter').value;
+  populateSubcountyFilter(d,''); populateParishFilter(d,'','');
+  document.getElementById('subcounty-filter').value='';
+  document.getElementById('parish-filter').value='';
+  filterVenues();
+}
+function onSubcountyChange(){
+  var d=document.getElementById('district-filter').value;
+  var sc=document.getElementById('subcounty-filter').value;
+  populateParishFilter(d,sc,'');
+  document.getElementById('parish-filter').value='';
+  filterVenues();
+}
+
+// ════════════════════════════════════════════════════════════
+//  FILTER & RENDER
+// ════════════════════════════════════════════════════════════
+function filterVenues(){
+  var q=(document.getElementById('search-input').value||'').toLowerCase();
+  var stage=document.getElementById('stage-filter').value;
+  var district=document.getElementById('district-filter').value;
+  var subcounty=document.getElementById('subcounty-filter').value;
+  var parish=document.getElementById('parish-filter').value;
+  var contractor=document.getElementById('contractor-filter').value;
+
+  filteredVenues=allVenues.filter(function(v){
+    var vCont=String(v['Contractor']||v['Contractor Name']||'').trim();
+    var matchS=!stage||v['Status']===stage;
+    var matchD=!district||String(v[COL_DISTRICT]||'').trim()===district;
+    var matchSC=!subcounty||String(v[COL_SUBCOUNTY]||'').trim()===subcounty;
+    var matchP=!parish||String(v[COL_PARISH]||'').trim()===parish;
+    var matchC=!contractor||vCont===contractor;
+    // Smart name resolution for search
+    var vName=resolveVenueName(v);
+    var matchQ=!q
+      ||vName.toLowerCase().includes(q)
+      ||String(v['Contractor']||'').toLowerCase().includes(q)
+      ||String(v['Venue_ID']||'').toLowerCase().includes(q)
+      ||String(v['ID']||'').toLowerCase().includes(q);
+    return matchS&&matchD&&matchSC&&matchP&&matchC&&matchQ;
+  });
+  updateClearAllBtn(stage,district,subcounty,parish,contractor,q);
+  renderGeoSummary(district,subcounty,parish);
+  renderPipeline();
+  renderList();
+}
+
+// Smart venue name resolution — tries multiple common column names
+function resolveVenueName(v){
+  if(v['venue_name']    && String(v['venue_name']).trim())    return String(v['venue_name']).trim();
+  if(v['Venue Name']    && String(v['Venue Name']).trim())    return String(v['Venue Name']).trim();
+  if(v['Venue_Name']    && String(v['Venue_Name']).trim())    return String(v['Venue_Name']).trim();
+  if(v['Name']          && String(v['Name']).trim())          return String(v['Name']).trim();
+  if(v['name']          && String(v['name']).trim())          return String(v['name']).trim();
+  // Fallback: look for any key containing "name"
+  var keys=Object.keys(v);
+  for(var i=0;i<keys.length;i++){
+    if(keys[i].toLowerCase().indexOf('name')>-1 && String(v[keys[i]]).trim()){
+      return String(v[keys[i]]).trim();
+    }
+  }
+  return v['Venue_ID']||v['ID']||'(no name)';
+}
+
+function updateClearAllBtn(stage,district,subcounty,parish,contractor,q){
+  document.getElementById('clear-all-btn').style.display=
+    (stage||district||subcounty||parish||contractor||q)?'inline-flex':'none';
+}
+function clearSearch(){ document.getElementById('search-input').value=''; filterVenues(); }
+function clearAllFilters(){
+  ['search-input','stage-filter','district-filter','subcounty-filter','parish-filter','contractor-filter']
+    .forEach(function(id){ document.getElementById(id).value=''; });
+  populateSubcountyFilter('',''); populateParishFilter('','','');
+  filterVenues();
+}
+
+// ── Geo summary ──────────────────────────────────────────────
+function renderGeoSummary(district,subcounty,parish){
+  var el=document.getElementById('geo-summary');
+  if(!district&&!subcounty&&!parish){ el.style.display='none'; return; }
+  var scope=allVenues.filter(function(v){
+    var mD=!district||String(v[COL_DISTRICT]||'').trim()===district;
+    var mS=!subcounty||String(v[COL_SUBCOUNTY]||'').trim()===subcounty;
+    var mP=!parish||String(v[COL_PARISH]||'').trim()===parish;
+    return mD&&mS&&mP;
+  });
+  var counts={}; STAGES.forEach(function(s){counts[s]=0;});
+  scope.forEach(function(v){ if(counts[v['Status']]!==undefined) counts[v['Status']]++; });
+  var total=scope.length, closed=counts['Closed Out'];
+  var pct=total?Math.round(closed/total*100):0;
+  var pc=pct>=75?'prog-high':pct>=40?'prog-mid':'prog-low';
+  var crumbs=[];
+  if(district)  crumbs.push('<i class="bi bi-building me-1"></i>'+formatGeoLabel(district)+' District');
+  if(subcounty) crumbs.push('<i class="bi bi-signpost me-1"></i>'+formatGeoLabel(subcounty)+' Sub-County');
+  if(parish)    crumbs.push('<i class="bi bi-geo-alt me-1"></i>'+formatGeoLabel(parish)+' Parish');
+  var pills=STAGES.map(function(s){
+    return counts[s]>0?'<span class="badge me-1 step-'+stageCls(s)+'">'+s+': '+counts[s]+'</span>':'';
+  }).join('');
+  el.innerHTML='<div class="card border-0 shadow-sm"><div class="card-body py-2 px-3">'+
+    '<div class="d-flex align-items-center gap-3 flex-wrap">'+
+    '<div><div class="fw-semibold">'+crumbs.join(' <i class="bi bi-chevron-right mx-1 text-muted"></i> ')+'</div>'+
+    '<small class="text-muted">'+total+' venue'+(total!==1?'s':'')+' in scope</small></div>'+
+    '<div class="d-flex gap-1 flex-wrap">'+pills+'</div>'+
+    '<div class="ms-auto d-flex align-items-center gap-2" style="min-width:160px">'+
+    '<div class="progress flex-grow-1" style="height:10px">'+
+    '<div class="progress-bar '+pc+'" style="width:'+pct+'%"></div></div>'+
+    '<small class="text-muted fw-semibold">'+pct+'% closed</small></div>'+
+    '</div></div></div>';
+  el.style.display='block';
+}
+
+// ── Pipeline bar ─────────────────────────────────────────────
+function renderPipeline(){
+  var counts={}, active=document.getElementById('stage-filter').value;
+  STAGES.concat(CANCEL_STAGES).forEach(function(s){counts[s]=0;});
+  allVenues.forEach(function(v){ if(counts[v['Status']]!==undefined) counts[v['Status']]++; });
+
+  var html='<div class="pipeline-step step-All'+((!active)?' active':'')+'" onclick="setStageFilter(\'\')">'+
+    '<i class="bi bi-grid me-1"></i>All<span class="badge-count d-block">'+allVenues.length+'</span></div>';
+
+  STAGES.forEach(function(s){
+    var cls='pipeline-step step-'+stageCls(s)+(active===s?' active':'');
+    html+='<div class="'+cls+'" onclick="setStageFilter(\''+s+'\')">'+
+      '<i class="bi '+STAGE_ICONS[s]+' me-1"></i>'+s+
+      '<span class="badge-count d-block">'+counts[s]+'</span></div>';
+  });
+
+  var cancelTotal=CANCEL_STAGES.reduce(function(n,s){return n+(counts[s]||0);},0);
+  if(cancelTotal>0){
+    html+='<div class="pipeline-step" style="flex:0;min-width:4px;padding:10px 3px;background:transparent;cursor:default;color:#ccc;">|</div>';
+    CANCEL_STAGES.forEach(function(s){
+      if(counts[s]>0){
+        html+='<div class="pipeline-step step-'+stageCls(s)+(active===s?' active':'')+'" onclick="setStageFilter(\''+s+'\')">'+
+          '<i class="bi '+STAGE_ICONS[s]+' me-1"></i>'+s+'<span class="badge-count d-block">'+counts[s]+'</span></div>';
+      }
+    });
+  }
+  document.getElementById('pipeline-bar').innerHTML=html;
+}
+function setStageFilter(s){ document.getElementById('stage-filter').value=s; filterVenues(); }
+
+// ── Venue list ───────────────────────────────────────────────
+function renderList(){
+  var countEl=document.getElementById('venue-count');
+  if(countEl) countEl.textContent=filteredVenues.length+' venue'+(filteredVenues.length!==1?'s':'')+
+    (filteredVenues.length!==allVenues.length?' (filtered from '+allVenues.length+')':'');
+
+  var el=document.getElementById('venue-list');
+  if(filteredVenues.length===0){
+    el.innerHTML='<div class="empty-state card shadow-sm border-0"><i class="bi bi-search"></i>'+
+      '<p class="fw-semibold">No venues found</p><p class="small">Adjust your search or filter.</p></div>';
+    return;
+  }
+  el.innerHTML=filteredVenues.map(function(v){
+    var sel=(v['Venue_ID']||v['ID'])===selectedVenueId?' selected':'';
+    var status=v['Status']||'Unknown';
+    var name=resolveVenueName(v);
+    var id=v['Venue_ID']||v['ID']||'';
+    var dist=v['district']?formatGeoLabel(v['district']):'';
+    var sc=v['subcounty']?formatGeoLabel(v['subcounty']):'';
+    var contr=v['Contractor']||v['Contractor Name']||'';
+    var qs=v['Venue Quality Status'];
+    var price=v['Agreed Price'];
+    var hasPO=v['PO Training Room']||v['PO Washrooms'];
+    var badgeCls='badge v-badge badge-'+stageCls(status);
+    return '<div class="card shadow-sm mb-2 venue-card'+sel+'" onclick="selectVenue(\''+esc(id)+'\')">' +
+      '<div class="card-body">'+
+      '<div class="d-flex justify-content-between align-items-start gap-2">'+
+      '<div class="v-name flex-grow-1">'+esc(name)+'</div>'+
+      '<span class="'+badgeCls+' flex-shrink-0">'+status+'</span>'+
+      '</div>'+
+      '<div class="v-meta d-flex flex-wrap gap-2 mt-1">'+
+      (contr?'<span><i class="bi bi-person-fill me-1 opacity-50"></i>'+esc(contr)+'</span>':'')+
+      ((dist||sc)?'<span><i class="bi bi-geo-alt-fill me-1 opacity-50"></i>'+[dist,sc].filter(Boolean).join(', ')+'</span>':'')+
+      (price?'<span class="v-price"><i class="bi bi-cash me-1 opacity-50"></i>UGX '+formatNum(price)+'</span>':'')+
+      (qs?'<span class="quality-'+qs+'">'+qs+'</span>':'')+
+      (hasPO?'<span style="color:var(--e-green);font-size:.68rem;font-weight:700"><i class="bi bi-clipboard2-check me-1"></i>PO Checked</span>':'')+
+      '</div>'+
+      '</div></div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+//  MOBILE NAVIGATION
+// ════════════════════════════════════════════════════════════
+function selectVenue(id){
+  selectedVenueId=id;
+  poRatings={'PO Training Room':'','PO Washrooms':'','PO Accessibility':'','PO General Environment':''};
+  renderList();
+  var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===id; });
+  if(v){
+    renderDetail(v);
+    if(window.innerWidth<992){
+      document.getElementById('venue-list-col').classList.add('mobile-hidden');
+      document.getElementById('detail-col').classList.add('mobile-open');
+      document.getElementById('mobile-back-btn').style.display='flex';
+      window.scrollTo(0,0);
+    }
+  }
+}
+function mobileBack(){
+  selectedVenueId=null;
+  document.getElementById('venue-list-col').classList.remove('mobile-hidden');
+  document.getElementById('detail-col').classList.remove('mobile-open');
+  document.getElementById('mobile-back-btn').style.display='none';
+  renderList();
+}
+
+// ════════════════════════════════════════════════════════════
+//  RENDER DETAIL PANEL
+// ════════════════════════════════════════════════════════════
+function renderDetail(v){
+  var status=v['Status']||'Negotiation';
+  var stageIdx=STAGES.indexOf(status);
+  var isCancelled=CANCEL_STAGES.indexOf(status)>-1;
+  var nextStage=(!isCancelled&&stageIdx>=0&&stageIdx<STAGES.length-1)?STAGES[stageIdx+1]:null;
+
+  var name=resolveVenueName(v);
+  var id=v['Venue_ID']||v['ID']||'';
+  var dist=v['district']?formatGeoLabel(v['district']):'';
+  var sc=v['subcounty']?formatGeoLabel(v['subcounty']):'';
+  var par=v['parish']?formatGeoLabel(v['parish']):'';
+  var geoLine=[dist,sc,par].filter(Boolean).join(' › ');
+  var contr=v['Contractor']||v['Contractor Name']||'';
+
+  // Breadcrumb
+  var crumb=STAGES.map(function(s,i){
+    if(isCancelled&&i>stageIdx) return '';
+    var cls=i<stageIdx?'fw-semibold':i===stageIdx?'fw-bold text-white':'opacity-50 text-white';
+    var sty=i<stageIdx?'color:var(--e-yellow)':'';
+    var icon=i<stageIdx?'bi-check-circle-fill':STAGE_ICONS[s];
+    return '<span class="'+cls+' me-1 small" style="'+sty+'">'+
+      '<i class="bi '+icon+' me-1"></i>'+s+
+      (i<STAGES.length-1?'<i class="bi bi-chevron-right mx-1 opacity-50"></i>':'')+
+      '</span>';
+  }).join('');
+  if(isCancelled){
+    crumb+='<span class="fw-bold text-white ms-2 small">'+
+      '<i class="bi bi-x-octagon-fill me-1" style="color:#ff8080"></i>'+status+'</span>';
+  }
+
+  var formHtml=buildForm(v,status,id);
+  var poHtml=buildPOCheck(v,id);
+
+  // Advance button
+  var advanceBtn='';
+  if(isCancelled){
+    advanceBtn='<div class="text-center py-2">'+
+      '<span class="badge fs-6 px-3 py-2" style="background:var(--e-red)">'+
+      '<i class="bi bi-x-octagon-fill me-1"></i>'+status+'</span>'+
+      (v['Cancellation Reason']?'<div class="text-muted small mt-2"><strong>Reason:</strong> '+esc(v['Cancellation Reason'])+'</div>':'')+
+      '</div>';
+  } else if(nextStage){
+    advanceBtn='<button class="btn-advance-lg" onclick="advanceStage()">'+
+      '<i class="bi bi-arrow-right-circle-fill"></i><span>Advance to '+nextStage+'</span>'+
+      '</button>';
+  } else if(stageIdx===STAGES.length-1){
+    advanceBtn='<div class="text-center"><span class="badge fs-6 px-3 py-2" style="background:var(--e-green)">'+
+      '<i class="bi bi-patch-check-fill me-1"></i>Closed Out</span></div>';
+  }
+
+  var secButtons='';
+  if(!isCancelled){
+    var cId=esc(id);
+    secButtons='<div class="d-flex gap-2 mt-2 flex-wrap">'+
+      '<button class="btn btn-save-sm flex-grow-1" onclick="saveFields()">'+
+      '<i class="bi bi-floppy-fill me-1"></i>Save</button>'+
+      '<button class="btn btn-secondary-sm" onclick="openCancelModal(\''+cId+'\',\'Cancelled\')">'+
+      '<i class="bi bi-x-circle me-1"></i>Cancel</button>'+
+      '<button class="btn btn-secondary-sm" onclick="openCancelModal(\''+cId+'\',\'Rejected\')">'+
+      '<i class="bi bi-slash-circle me-1"></i>Reject</button>'+
+      '</div>';
+  }
+
+  var html=
+    '<div class="card shadow-sm border-0" style="border-radius:12px;overflow:hidden">'+
+    '<div class="card-header" style="background:linear-gradient(135deg,var(--e-navy) 0%,var(--e-blue) 100%);color:#fff;padding:12px 16px">'+
+    '<div class="d-flex justify-content-between align-items-center gap-2">'+
+    '<div class="fw-bold" style="font-size:.92rem;line-height:1.2">'+esc(name)+'</div>'+
+    '<span class="badge badge-'+stageCls(status)+' flex-shrink-0">'+status+'</span>'+
+    '</div>'+
+    '<div class="opacity-75 mt-1" style="font-size:.7rem">'+
+    '<i class="bi bi-person me-1"></i>'+esc(contr)+' · ID: '+esc(id)+
+    (geoLine?' · <i class="bi bi-geo-alt me-1"></i>'+geoLine:'')+
+    '</div>'+
+    '</div>'+
+    '<div class="px-3 pt-2 pb-1 border-bottom" style="overflow-x:auto;white-space:nowrap;font-size:.68rem">'+crumb+'</div>'+
+    '<div class="card-body px-3 pt-3 pb-2">'+formHtml+'</div>'+
+    '<div class="detail-action-bar">'+advanceBtn+secButtons+'</div>'+
+    '</div>'+
+    poHtml;
+
+  document.getElementById('detail-panel').innerHTML=html;
+  setTimeout(initUploadArea, 0);
+  setTimeout(initInvoiceUploadArea, 0);
+}
+
+// ════════════════════════════════════════════════════════════
+//  BUILD FORM
+// ════════════════════════════════════════════════════════════
+function buildForm(v, status, venueId){
+  var html='';
+  var isNeg=status==='Negotiation';
+  var isFR =status==='Financial Review';
+  var isCS =status==='Contract Signing';
+  var isEF =status==='EFRIS Invoice';
+  var isPay=status==='Payment';
+  var isVM =status==='Venue Mgt';
+  var isCO =status==='Closed Out';
+
+  // ── Negotiation Notes + Agreed Price ─────────────────────
+  html+=fld('Negotiation Notes','textarea','Negotiation Notes',
+    v['Negotiation Notes'],'Enter agreed terms, conditions, site visit notes…',isNeg);
+  html+=fld('Agreed Price (UGX)','number','Agreed Price',
+    v['Agreed Price'],'e.g. 850000',isNeg);
+
+  // ── Financial Review ──────────────────────────────────────
+  if(['Financial Review','Contract Signing','EFRIS Invoice','Payment','Venue Mgt','Closed Out'].indexOf(status)>-1){
+    html+=fld('Financial Review Notes','textarea','Financial Review Notes',
+      v['Financial Review Notes'],'Enter review comments…',isFR);
+    html+=fld('Financial Review Date','date','Financial Review Date',
+      v['Financial Review Date'],'',isFR);
+
+    // Deborah's "Request Twaha Approval" trigger (visible in FR stage to approvers)
+    if(isFR && currentUser.isApprover){
+      html+='<div class="mb-3">'+
+        '<button class="btn-trigger-approval" onclick="triggerFinancialApproval()">'+
+        '<i class="bi bi-bell-fill"></i> Request Twaha to Approve Financial Review'+
+        '</button>'+
+        '<small class="text-muted d-block mt-1" style="font-size:.7rem">'+
+        'Sends an email to Twaha asking him to review and approve this venue.</small>'+
+        '</div>';
+    }
+  }
+
+  // ── Contract Signing ──────────────────────────────────────
+  if(['Contract Signing','EFRIS Invoice','Payment','Venue Mgt','Closed Out'].indexOf(status)>-1){
+    var contractLink=v['Contract Link']||'';
+    if(contractLink){
+      html+='<div class="mb-3"><label class="form-label fw-semibold small">Signed Contract '+
+        (isCS?'<span class="badge-current-stage">Current Stage</span>':'')+
+        '</label>'+
+        '<div class="contract-link-display"><i class="bi bi-file-earmark-check text-success me-2"></i>'+
+        '<a href="'+esc(contractLink)+'" target="_blank" class="text-success fw-semibold">View Signed Contract</a>'+
+        (v['Contract Upload Date']?' <small class="text-muted ms-2">Uploaded: '+esc(v['Contract Upload Date'])+'</small>':'')+
+        '</div></div>';
+    } else {
+      html+='<div class="mb-3">'+
+        '<label class="form-label fw-semibold small">Signed Contract '+
+        (isCS?'<span class="badge-current-stage">Current Stage</span> <span class="text-danger">*Required</span>':'')+
+        '</label>'+
+        '<div class="upload-area" id="contract-upload-area">'+
+        '<input type="file" id="contract-file-input" accept="image/*,.pdf"'+
+        ' onchange="handleContractFile(this)">'+
+        '<i class="bi bi-cloud-upload upload-icon"></i>'+
+        '<div class="upload-label">Tap to upload or drag &amp; drop</div>'+
+        '<div class="upload-sub">Photo, image or PDF &middot; works on phone &amp; laptop</div>'+
+        '</div>'+
+        '<div class="upload-progress" id="contract-upload-progress">'+
+        '<div class="upload-progress-bar" id="contract-upload-bar"></div></div>'+
+        '<div id="contract-upload-status" class="mt-1" style="font-size:.75rem"></div>'+
+        '<p class="text-muted mt-2 mb-1" style="font-size:.72rem">Or paste a Google Drive link:</p>'+
+        '<input id="field-Contract Link" type="url" class="form-control form-control-sm'+(isCS?' field-current':'')+
+        '" placeholder="https://drive.google.com/…" value="'+esc(contractLink)+'" />'+
+        '</div>';
+    }
+  }
+
+  // ── EFRIS Invoice ─────────────────────────────────────────
+  if(['EFRIS Invoice','Payment','Venue Mgt','Closed Out'].indexOf(status)>-1){
+    var efrisLink=v['EFRIS Invoice Link']||'';
+    var efrisStatus=v['EFRIS Invoice Status']||'';
+
+    html+='<div class="mb-3"><label class="form-label fw-semibold small">EFRIS Invoice '+
+      (isEF?'<span class="badge-current-stage">Current Stage</span>':
+             '<span class="field-optional-note">(admin team)</span>')+
+      '</label>';
+
+    // EFRIS status selector (Has / Doesn't Have)
+    var hasActive   = efrisStatus==="Has EFRIS Invoice"  ? ' active-has'   : '';
+    var hasntActive = efrisStatus==="Doesn't Have EFRIS" ? ' active-hasnt' : '';
+    html+='<div class="efris-status-group">'+
+      '<button type="button" class="efris-status-btn'+hasActive+'" id="efris-has-btn" '+
+      'onclick="setEFRISStatus(\'Has EFRIS Invoice\')">'+
+      '<i class="bi bi-check-circle-fill me-1"></i>Has EFRIS Invoice</button>'+
+      '<button type="button" class="efris-status-btn'+hasntActive+'" id="efris-hasnt-btn" '+
+      'onclick="setEFRISStatus(\'Doesn\'t Have EFRIS\')">'+
+      '<i class="bi bi-x-circle-fill me-1"></i>Doesn\'t Have EFRIS</button>'+
+      '</div>';
+    // Hidden field to track status
+    html+='<input type="hidden" id="field-EFRIS Invoice Status" value="'+esc(efrisStatus)+'" />';
+
+    // Invoice link / upload
+    if(efrisLink){
+      html+='<div class="efris-link-display"><i class="bi bi-receipt-cutoff text-primary me-2"></i>'+
+        '<a href="'+esc(efrisLink)+'" target="_blank" class="text-primary fw-semibold">View EFRIS Invoice</a>'+
+        (v['EFRIS Upload Date']?' <small class="text-muted ms-2">Uploaded: '+esc(v['EFRIS Upload Date'])+'</small>':'')+
+        '</div>';
+    } else {
+      html+=
+        '<div class="upload-area" id="efris-upload-area">'+
+        '<input type="file" id="efris-file-input" accept="image/*,.pdf"'+
+        ' onchange="handleInvoiceFile(this)">'+
+        '<i class="bi bi-cloud-upload upload-icon"></i>'+
+        '<div class="upload-label">Tap to upload or drag &amp; drop</div>'+
+        '<div class="upload-sub">Photo, image or PDF &middot; works on phone &amp; laptop</div>'+
+        '</div>'+
+        '<div class="upload-progress" id="efris-upload-progress">'+
+        '<div class="upload-progress-bar" id="efris-upload-bar"></div></div>'+
+        '<div id="efris-upload-status" class="mt-1" style="font-size:.75rem"></div>'+
+        '<p class="text-muted mt-2 mb-1" style="font-size:.72rem">Or paste a Google Drive link:</p>'+
+        '<input id="field-EFRIS Invoice Link" type="url" class="form-control form-control-sm'+(isEF?' field-current':'')+
+        '" placeholder="https://drive.google.com/…" value="'+esc(efrisLink)+'" />';
+    }
+
+    html+='</div>';
+  }
+
+  // ── Payment ───────────────────────────────────────────────
+  if(['Payment','Venue Mgt','Closed Out'].indexOf(status)>-1){
+    if(v['Payment Confirmed By']){
+      html+='<div class="mb-3"><div class="contract-link-display">'+
+        '<i class="bi bi-check-circle-fill text-success me-2"></i>'+
+        '<strong>Payment confirmed</strong> by '+esc(v['Payment Confirmed By'])+
+        (v['Payment Confirmation Date']?' on '+esc(v['Payment Confirmation Date']):'')+
+        '</div></div>';
+    } else if(isPay){
+      var payStatus=v['Payment Status']||'';
+      var confCls=payStatus==='Confirmed'?' active-confirmed':'';
+      var pendCls=payStatus==='Pending'?' active-pending':'';
+      html+='<div class="mb-3">'+
+        '<label class="form-label fw-semibold small">Payment Status '+
+        '<span class="badge-current-stage">Current Stage</span></label>'+
+        '<div class="payment-toggle">'+
+        '<button type="button" class="payment-btn'+confCls+'" '+
+        'data-payval="Confirmed" onclick="setPaymentStatus(this)">'+
+        '<i class="bi bi-check-circle-fill"></i>Payment Confirmed</button>'+
+        '<button type="button" class="payment-btn'+pendCls+'" '+
+        'data-payval="Pending" onclick="setPaymentStatus(this)">'+
+        '<i class="bi bi-hourglass-split"></i>Pending</button>'+
+        '</div>'+
+        '<input type="hidden" id="field-Payment Status" value="'+esc(payStatus)+'" />'+
+        '</div>';
+    }
+  }
+
+  // ── Venue Mgt ─────────────────────────────────────────────
+  if(['Venue Mgt','Closed Out'].indexOf(status)>-1){
+    // Overall quality (summary used for closed-out display)
+    html+=selFld('Overall Quality Status','Venue Quality Status',v['Venue Quality Status'],
+      ['Exceeds','Meets','Below'],isVM);
+    html+=fld('General Feedback','textarea','Venue Feedback',
+      v['Venue Feedback'],'Feedback from FOA or field coordinator…',isVM);
+    // 4-week review tabs
+    html+=buildWeeklyReviews(v, venueId);
+  }
+
+  // ── Closed Out ────────────────────────────────────────────
+  if(isCO){
+    html+=fld('Closed Out Date','date','Closed Out Date',v['Closed Out Date'],'',true);
+    if(v['Closed Out By']){
+      html+='<div class="mb-2"><small class="text-muted">Closed by: <strong>'+esc(v['Closed Out By'])+'</strong></small></div>';
+    }
+  }
+
+  return html;
+}
+
+
+// ════════════════════════════════════════════════════════════
+//  WEEKLY VENUE QUALITY REVIEWS  (Week 1–4)
+// ════════════════════════════════════════════════════════════
+var weeklyState={1:{quality:''},2:{quality:''},3:{quality:''},4:{quality:''}};
+
+function buildWeeklyReviews(v,venueId){
+  var safeId=esc(venueId);
+  var qualities=['Poor','Fair','Good','Excellent'];
+  var tabs='<div class="week-tabs">';
+  [1,2,3,4].forEach(function(w){
+    var q=v['Week '+w+' Quality']||'';
+    var isPoor=q==='Poor'||q==='Below';
+    var hasCls=q?(isPoor?' has-poor':' has-data'):'';
+    tabs+='<div class="week-tab'+hasCls+'" id="wtab-'+w+'" onclick="switchWeekTab('+w+')">'+
+      'Week '+w+'<br><small style="font-size:.6rem;opacity:.8">'+(q||'Optional')+'</small></div>';
+  });
+  tabs+='</div>';
+  var panels='';
+  [1,2,3,4].forEach(function(w){
+    var savedQ=v['Week '+w+' Quality']||'';
+    var savedN=v['Week '+w+' Notes']||'';
+    var savedD=v['Week '+w+' Date']||'';
+    var savedB=v['Week '+w+' By']||'';
+    if(savedQ) weeklyState[w].quality=savedQ;
+    var badge=savedQ?'<div class="week-saved-badge"><i class="bi bi-check-circle-fill"></i> '+
+      savedQ+(savedD?' &middot; '+savedD:'')+(savedB?' by '+savedB:'')+'</div>':'';
+    var qBtns='';
+    qualities.forEach(function(q){
+      var sel=savedQ===q?' sel-'+q:'';
+      qBtns+='<button type="button" class="week-quality-btn'+sel+'"'+
+        ' data-week="'+w+'" data-quality="'+q+'" onclick="setWeekQuality(this)">'+q+'</button>';
+    });
+    panels+='<div class="week-panel" id="wpanel-'+w+'">'+badge+
+      '<div class="week-quality-btns">'+qBtns+'</div>'+
+      '<textarea class="form-control mb-1" id="week-notes-'+w+'" rows="2" style="font-size:.8rem"'+
+      ' placeholder="Week '+w+' notes (optional)…">'+esc(savedN)+'</textarea>'+
+      '<button class="btn-week-save" data-week="'+w+'" data-vid="'+safeId+'"'+
+      ' onclick="saveWeekReview(this)"><i class="bi bi-floppy-fill"></i> Save Week '+w+' Review</button>'+
+      '</div>';
+  });
+  return '<div class="mt-3 mb-1" style="border:2px solid #0d7377;border-radius:10px;overflow:hidden">'+
+    '<div style="background:linear-gradient(135deg,#0a5558 0%,#0d7377 100%);color:#fff;'+
+    'padding:9px 14px;font-size:.82rem;font-weight:700;display:flex;align-items:center;gap:6px">'+
+    '<i class="bi bi-calendar-week-fill"></i> Weekly Quality Reviews'+
+    '<span style="font-size:.68rem;font-weight:400;opacity:.82;margin-left:auto">Optional &middot; 4 Weeks</span>'+
+    '</div><div style="padding:12px 14px">'+tabs+panels+'</div></div>';
+}
+
+function switchWeekTab(w){
+  for(var i=1;i<=4;i++){
+    var t=document.getElementById('wtab-'+i);
+    var p=document.getElementById('wpanel-'+i);
+    if(t) t.classList.toggle('active',i===w);
+    if(p) p.classList.toggle('active',i===w);
+  }
+}
+
+function setWeekQuality(btn){
+  var w=parseInt(btn.getAttribute('data-week'));
+  var val=btn.getAttribute('data-quality');
+  weeklyState[w].quality=val;
+  btn.closest('.week-quality-btns').querySelectorAll('.week-quality-btn')
+    .forEach(function(b){ b.className='week-quality-btn'; });
+  btn.classList.add('sel-'+val);
+}
+
+function saveWeekReview(btn){
+  var w=parseInt(btn.getAttribute('data-week'));
+  var vid=btn.getAttribute('data-vid');
+  var notes=(document.getElementById('week-notes-'+w)||{value:''}).value||'';
+  var quality=weeklyState[w].quality||'';
+  if(!quality){ showToast('Please select a quality rating for Week '+w,'danger'); return; }
+  setLoading(true,'Saving Week '+w+' review…');
+  google.script.run
+    .withSuccessHandler(function(res){
+      setLoading(false);
+      if(res.success){
+        showToast('Week '+w+' review saved!','success');
+        var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===vid; });
+        if(v){
+          v['Week '+w+' Quality']=quality; v['Week '+w+' Notes']=notes;
+          v['Week '+w+' Date']=new Date().toISOString().split('T')[0];
+          v['Week '+w+' By']=currentUser.email;
+          renderDetail(v);
+          setTimeout(function(){ switchWeekTab(w); },60);
+        }
+      } else { showToast('Save failed: '+res.message,'danger'); }
+    })
+    .withFailureHandler(function(err){ setLoading(false); showToast('Error: '+(err.message||err),'danger'); })
+    .saveWeeklyReview(vid, w, {quality:quality, notes:notes});
+}
+
+// ════════════════════════════════════════════════════════════
+//  PO QUALITY CHECK SECTION
+// ════════════════════════════════════════════════════════════
+function buildPOCheck(v, venueId){
+  var safeId = esc(venueId);
+  var hasPrior = v['PO Training Room']||v['PO Washrooms']||v['PO Accessibility']||v['PO General Environment'];
+  var priorInfo='';
+  if(hasPrior){
+    priorInfo='<div class="po-check-existing mb-3">'+
+      '<small class="text-muted"><i class="bi bi-clock-history me-1"></i>Last check'+
+      (v['PO Check Date']?' on '+esc(v['PO Check Date']):'')+(v['PO Check By']?' by '+esc(v['PO Check By']):'')+'</small>'+
+      '<div class="mt-1 d-flex flex-wrap gap-2">'+
+      (v['PO Training Room']    ?poRatingBadge('Training Room',    v['PO Training Room'])    :'')+
+      (v['PO Washrooms']        ?poRatingBadge('Washrooms',        v['PO Washrooms'])        :'')+
+      (v['PO Accessibility']    ?poRatingBadge('Accessibility',    v['PO Accessibility'])    :'')+
+      (v['PO General Environment']?poRatingBadge('Environment',    v['PO General Environment']):'')+
+      '</div>'+
+      (v['PO Comments']?'<div class="mt-1 fst-italic" style="font-size:.75rem;color:#555">'+esc(v['PO Comments'])+'</div>':'')+
+      '</div>';
+  }
+
+  var aspects=[
+    {key:'PO Training Room',        label:'Training Room',       icon:'bi-easel-fill'},
+    {key:'PO Washrooms',            label:'Washrooms',            icon:'bi-droplet-half'},
+    {key:'PO Accessibility',        label:'Accessibility',        icon:'bi-person-wheelchair'},
+    {key:'PO General Environment',  label:'General Environment',  icon:'bi-tree-fill'}
+  ];
+  var ratings=['Poor','Fair','Good','Excellent'];
+
+  var ratingHtml='';
+  aspects.forEach(function(a){
+    if(!poRatings[a.key] && v[a.key]) poRatings[a.key]=v[a.key];
+    var currentVal=poRatings[a.key]||'';
+    ratingHtml+='<div class="po-rating-group">'+
+      '<label><i class="bi '+a.icon+' me-1 opacity-60"></i>'+a.label+'</label>'+
+      '<div class="po-rating-btns">';
+    ratings.forEach(function(r){
+      var activeClass=currentVal===r?' active-'+r:'';
+      ratingHtml+='<button type="button" class="po-rating-btn'+activeClass+'"'+
+        ' data-pokey="'+a.key+'" data-rating="'+r+'"'+
+        ' onclick="setPORating(this)">'+r+'</button>';
+    });
+    ratingHtml+='</div></div>';
+  });
+
+  return '<div class="po-stage-card">'+
+    '<div class="po-stage-header">'+
+    '<div class="po-title"><i class="bi bi-clipboard2-pulse-fill"></i>&nbsp;Quality Check</div>'+
+    '<span class="po-optional">Anyone &middot; Flags Twaha if Poor</span>'+
+    '</div>'+
+    '<div class="po-stage-body">'+
+    priorInfo+
+    ratingHtml+
+    '<div class="mt-3">'+
+    '<textarea id="po-comments-field" class="form-control" rows="2" style="font-size:.82rem"'+
+    ' placeholder="Optional comments...">'+(v['PO Comments']?esc(v['PO Comments']):'')+'</textarea>'+
+    '</div>'+
+    '<button class="btn-po-save" data-vid="'+safeId+'" onclick="savePOCheck(this.dataset.vid)">'+
+    '<i class="bi bi-clipboard2-check me-1"></i>Save PO Quality Check</button>'+
+    '</div></div>';
+}
+
+function poRatingBadge(label, rating){
+  var colors={Poor:'#870101',Fair:'#b87400',Good:'#0F6A8C',Excellent:'#008148'};
+  var bg={Poor:'#faeaea',Fair:'#fef6e4',Good:'#e3f2f8',Excellent:'#e0f2ea'};
+  var c=colors[rating]||'#555', b=bg[rating]||'#f0f0f0';
+  return '<span style="background:'+b+';color:'+c+';border:1px solid '+c+';padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700">'+
+    label+': '+rating+'</span>';
+}
+
+function setPORating(btn){
+  var key=btn.getAttribute('data-pokey');
+  var value=btn.getAttribute('data-rating');
+  poRatings[key]=value;
+  var group=btn.closest('.po-rating-group');
+  group.querySelectorAll('.po-rating-btn').forEach(function(b){ b.className='po-rating-btn'; });
+  btn.classList.add('active-'+value);
+}
+
+function savePOCheck(venueId){
+  var checkData={
+    'PO Training Room':       poRatings['PO Training Room'],
+    'PO Washrooms':           poRatings['PO Washrooms'],
+    'PO Accessibility':       poRatings['PO Accessibility'],
+    'PO General Environment': poRatings['PO General Environment'],
+    'PO Comments':            (document.getElementById('po-comments-field')||{value:''}).value||''
+  };
+  if(!checkData['PO Training Room']&&!checkData['PO Washrooms']&&
+     !checkData['PO Accessibility']&&!checkData['PO General Environment']){
+    showToast('Please rate at least one category before saving.','danger');
+    return;
+  }
+  setLoading(true,'Saving PO Check…');
+  google.script.run
+    .withSuccessHandler(function(res){
+      setLoading(false);
+      if(res.success){
+        // Update local venue object
+        var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===venueId; });
+        if(v) Object.assign(v,checkData);
+        showToast('PO Quality Check saved!','success');
+        renderList();
+      } else {
+        showToast('Save failed: '+res.message,'danger');
+      }
+    })
+    .withFailureHandler(function(err){ setLoading(false); showToast('Error: '+(err.message||err),'danger'); })
+    .savePOCheck(venueId, checkData);
+}
+
+// ════════════════════════════════════════════════════════════
+//  EFRIS STATUS TOGGLE
+// ════════════════════════════════════════════════════════════
+function setEFRISStatus(val){
+  document.getElementById('field-EFRIS Invoice Status').value=val;
+  var hasBtn=document.getElementById('efris-has-btn');
+  var hasntBtn=document.getElementById('efris-hasnt-btn');
+  if(hasBtn)   hasBtn.className='efris-status-btn'+(val==='Has EFRIS Invoice'?' active-has':'');
+  if(hasntBtn) hasntBtn.className='efris-status-btn'+(val==="Doesn't Have EFRIS"?' active-hasnt':'');
+}
+
+// ════════════════════════════════════════════════════════════
+//  FINANCIAL APPROVAL TRIGGER
+// ════════════════════════════════════════════════════════════
+function triggerFinancialApproval(){
+  var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===selectedVenueId; });
+  if(!v) return;
+  var venueName=resolveVenueName(v);
+  setLoading(true,'Sending request to Twaha…');
+  google.script.run
+    .withSuccessHandler(function(res){
+      setLoading(false);
+      if(res.success) showToast('✅ Approval request sent to Twaha.','success');
+      else showToast('Failed: '+res.message,'danger');
+    })
+    .withFailureHandler(function(err){ setLoading(false); showToast('Error: '+(err.message||err),'danger'); })
+    .requestFinancialApproval(selectedVenueId, venueName);
+}
+
+
+// ════════════════════════════════════════════════════════════
+//  CONTRACT FILE UPLOAD
+// ════════════════════════════════════════════════════════════
+function initUploadArea(){
+  var area=document.getElementById('contract-upload-area');
+  if(!area) return;
+  area.addEventListener('dragover',function(e){ e.preventDefault(); area.classList.add('drag-over'); });
+  area.addEventListener('dragleave',function(){ area.classList.remove('drag-over'); });
+  area.addEventListener('drop',function(e){
+    e.preventDefault(); area.classList.remove('drag-over');
+    var file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(file) processContractFile(file);
+  });
+}
+function handleContractFile(input){
+  if(input.files&&input.files[0]) processContractFile(input.files[0]);
+}
+function processContractFile(file){
+  var maxMB=15;
+  if(file.size>maxMB*1024*1024){ showToast('File too large (max '+maxMB+'MB). Use Drive link instead.','danger'); return; }
+  var allowed=['image/jpeg','image/png','image/jpg','image/webp','application/pdf'];
+  if(allowed.indexOf(file.type)===-1){ showToast('Please upload a JPG, PNG, WEBP or PDF.','danger'); return; }
+  var area=document.getElementById('contract-upload-area');
+  var prog=document.getElementById('contract-upload-progress');
+  var bar=document.getElementById('contract-upload-bar');
+  var status=document.getElementById('contract-upload-status');
+  if(area) area.classList.add('uploading');
+  if(prog) prog.style.display='block';
+  if(bar)  bar.style.width='30%';
+  if(status) status.innerHTML='<span class="text-muted"><i class="bi bi-arrow-repeat me-1"></i>Reading file…</span>';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var base64=e.target.result.split(',')[1];
+    if(bar) bar.style.width='60%';
+    if(status) status.innerHTML='<span class="text-muted"><i class="bi bi-cloud-upload me-1"></i>Uploading to Drive…</span>';
+    setLoading(true,'Uploading contract…');
+    google.script.run
+      .withSuccessHandler(function(res){
+        setLoading(false);
+        if(bar) bar.style.width='100%';
+        if(res.success){
+          if(area){ area.innerHTML='<i class="bi bi-check-circle-fill text-success upload-icon"></i>'+
+            '<div class="upload-label text-success">Uploaded successfully!</div>'+
+            '<div class="upload-sub"><a href="'+res.fileUrl+'" target="_blank" class="text-success">View contract</a></div>'; }
+          if(prog) prog.style.display='none';
+          var lf=document.getElementById('field-Contract Link');
+          if(lf) lf.value=res.fileUrl;
+          var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===selectedVenueId; });
+          if(v){ v['Contract Link']=res.fileUrl; v['Contract Upload Date']=new Date().toISOString().split('T')[0]; }
+          showToast('Contract uploaded!','success');
+        } else {
+          if(area) area.classList.remove('uploading');
+          if(prog) prog.style.display='none';
+          if(status) status.innerHTML='<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>'+res.message+'</span>';
+          showToast('Upload failed: '+res.message,'danger');
+        }
+      })
+      .withFailureHandler(function(err){
+        setLoading(false);
+        if(area) area.classList.remove('uploading');
+        if(prog) prog.style.display='none';
+        showToast('Upload error: '+(err.message||err),'danger');
+      })
+      .uploadContractFile(selectedVenueId, base64, file.name, file.type);
+  };
+  reader.onerror=function(){ showToast('Could not read the file.','danger'); };
+  reader.readAsDataURL(file);
+}
+
+// ════════════════════════════════════════════════════════════
+//  EFRIS INVOICE FILE UPLOAD
+// ════════════════════════════════════════════════════════════
+function initInvoiceUploadArea(){
+  var area=document.getElementById('efris-upload-area');
+  if(!area) return;
+  area.addEventListener('dragover',function(e){ e.preventDefault(); area.classList.add('drag-over'); });
+  area.addEventListener('dragleave',function(){ area.classList.remove('drag-over'); });
+  area.addEventListener('drop',function(e){
+    e.preventDefault(); area.classList.remove('drag-over');
+    var file=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(file) processInvoiceFile(file);
+  });
+}
+function handleInvoiceFile(input){
+  if(input.files&&input.files[0]) processInvoiceFile(input.files[0]);
+}
+function processInvoiceFile(file){
+  var maxMB=15;
+  if(file.size>maxMB*1024*1024){ showToast('File too large (max '+maxMB+'MB). Use Drive link instead.','danger'); return; }
+  var allowed=['image/jpeg','image/png','image/jpg','image/webp','application/pdf'];
+  if(allowed.indexOf(file.type)===-1){ showToast('Please upload a JPG, PNG, WEBP or PDF.','danger'); return; }
+  var area=document.getElementById('efris-upload-area');
+  var prog=document.getElementById('efris-upload-progress');
+  var bar =document.getElementById('efris-upload-bar');
+  var status=document.getElementById('efris-upload-status');
+  if(area) area.classList.add('uploading');
+  if(prog) prog.style.display='block';
+  if(bar)  bar.style.width='30%';
+  if(status) status.innerHTML='<span class="text-muted"><i class="bi bi-arrow-repeat me-1"></i>Reading file…</span>';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var base64=e.target.result.split(',')[1];
+    if(bar) bar.style.width='60%';
+    if(status) status.innerHTML='<span class="text-muted"><i class="bi bi-cloud-upload me-1"></i>Uploading to Drive…</span>';
+    setLoading(true,'Uploading invoice…');
+    google.script.run
+      .withSuccessHandler(function(res){
+        setLoading(false);
+        if(bar) bar.style.width='100%';
+        if(res.success){
+          if(area){ area.innerHTML='<i class="bi bi-check-circle-fill text-success upload-icon"></i>'+
+            '<div class="upload-label text-success">Uploaded successfully!</div>'+
+            '<div class="upload-sub"><a href="'+res.fileUrl+'" target="_blank" class="text-success">View invoice</a></div>'; }
+          if(prog) prog.style.display='none';
+          var lf=document.getElementById('field-EFRIS Invoice Link');
+          if(lf) lf.value=res.fileUrl;
+          var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===selectedVenueId; });
+          if(v){ v['EFRIS Invoice Link']=res.fileUrl; v['EFRIS Upload Date']=new Date().toISOString().split('T')[0]; }
+          showToast('Invoice uploaded!','success');
+        } else {
+          if(area) area.classList.remove('uploading');
+          if(prog) prog.style.display='none';
+          if(status) status.innerHTML='<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>'+res.message+'</span>';
+          showToast('Upload failed: '+res.message,'danger');
+        }
+      })
+      .withFailureHandler(function(err){
+        setLoading(false);
+        if(area) area.classList.remove('uploading');
+        if(prog) prog.style.display='none';
+        showToast('Upload error: '+(err.message||err),'danger');
+      })
+      .uploadInvoiceFile(selectedVenueId, base64, file.name, file.type);
+  };
+  reader.onerror=function(){ showToast('Could not read the file.','danger'); };
+  reader.readAsDataURL(file);
+}
+
+
+// ════════════════════════════════════════════════════════════
+//  PAYMENT STATUS TOGGLE
+// ════════════════════════════════════════════════════════════
+function setPaymentStatus(btn){
+  var val=btn.getAttribute('data-payval');
+  var hf=document.getElementById('field-Payment Status');
+  if(hf) hf.value=val;
+  btn.closest('.payment-toggle').querySelectorAll('.payment-btn').forEach(function(b){
+    b.className='payment-btn';
+  });
+  btn.classList.add('active-'+val.toLowerCase());
+}
+
+// ════════════════════════════════════════════════════════════
+//  UPLOAD HELPERS
+// ════════════════════════════════════════════════════════════
+function openContractForm(venueId){
+  // Replace with your actual Google Form URL for contract uploads
+  var FORM_URL='https://docs.google.com/forms/d/YOUR_CONTRACT_FORM_ID/viewform?usp=pp_url&entry.VENUE_ID_ENTRY=';
+  window.open(FORM_URL+encodeURIComponent(venueId),'_blank');
+}
+
+function openInvoiceForm(venueId){
+  // Replace with your actual Google Form URL for invoice uploads
+  var FORM_URL='https://docs.google.com/forms/d/YOUR_INVOICE_FORM_ID/viewform?usp=pp_url&entry.VENUE_ID_ENTRY=';
+  window.open(FORM_URL+encodeURIComponent(venueId),'_blank');
+}
+
+// ════════════════════════════════════════════════════════════
+//  SAVE FIELDS
+// ════════════════════════════════════════════════════════════
+function saveFields(){
+  var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===selectedVenueId; });
+  if(!v) return;
+  var updates={};
+  var fields=['Negotiation Notes','Agreed Price','Financial Review Notes','Financial Review Date',
+              'Contract Link','EFRIS Invoice Status','EFRIS Invoice Link',
+              'Venue Quality Status','Venue Mgt Notes','Venue Feedback','Closed Out Date'];
+  fields.forEach(function(f){
+    var el=document.getElementById('field-'+f);
+    if(el) updates[f]=el.value;
+  });
+  setLoading(true,'Saving…');
+  google.script.run
+    .withSuccessHandler(function(res){
+      setLoading(false);
+      if(res.success){ Object.assign(v,updates); showToast('Saved!','success'); }
+      else showToast('Save failed: '+res.message,'danger');
+    })
+    .withFailureHandler(function(err){ setLoading(false); showToast('Error: '+(err.message||err),'danger'); })
+    .updateVenueStatus(selectedVenueId, updates);
+}
+
+// ════════════════════════════════════════════════════════════
+//  ADVANCE STAGE
+// ════════════════════════════════════════════════════════════
+function advanceStage(){
+  var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===selectedVenueId; });
+  if(!v) return;
+  var idx=STAGES.indexOf(v['Status']);
+  if(idx<0||idx>=STAGES.length-1) return;
+  var newStage=STAGES[idx+1];
+  var updates={Status:newStage};
+
+  ['Negotiation Notes','Agreed Price','Financial Review Notes','Financial Review Date',
+   'Contract Link','EFRIS Invoice Status','EFRIS Invoice Link',
+   'Venue Quality Status','Venue Mgt Notes','Venue Feedback','Closed Out Date']
+   .forEach(function(f){
+     var el=document.getElementById('field-'+f);
+     if(el) updates[f]=el.value;
+   });
+
+  var today=new Date().toISOString().split('T')[0];
+  if(newStage==='Financial Review'&&!updates['Financial Review Date']) updates['Financial Review Date']=today;
+  if(newStage==='Closed Out'&&!updates['Closed Out Date']) updates['Closed Out Date']=today;
+  if(newStage==='Venue Mgt'){
+    updates['Payment Confirmed By']=currentUser.email;
+    updates['Payment Confirmation Date']=today;
+  }
+  if(newStage==='Closed Out') updates['Closed Out By']=currentUser.email;
+
+  // Contract mandatory check
+  if(newStage==='EFRIS Invoice'&&!updates['Contract Link']&&!v['Contract Link']){
+    showToast('Please upload the signed contract before advancing.','danger');
+    return;
+  }
+
+  setLoading(true,'Updating…');
+  google.script.run
+    .withSuccessHandler(function(res){
+      setLoading(false);
+      if(res.permissionDenied){
+        showToast('🔒 '+res.message,'danger');
+      } else if(res.success){
+        Object.assign(v,updates);
+        showToast('Moved to '+newStage+'!','success');
+        renderPipeline(); renderList(); renderDetail(v);
+      } else {
+        showToast('Failed: '+res.message,'danger');
+      }
+    })
+    .withFailureHandler(function(err){ setLoading(false); showToast('Error: '+(err.message||err),'danger'); })
+    .updateVenueStatus(selectedVenueId, updates);
+}
+
+// ════════════════════════════════════════════════════════════
+//  CANCEL / REJECT
+// ════════════════════════════════════════════════════════════
+function openCancelModal(venueId,action){
+  pendingCancel={venueId:venueId,action:action};
+  document.getElementById('cancel-modal-title').textContent=action==='Rejected'?'Reject Venue':'Cancel Venue';
+  document.getElementById('cancel-modal-sub').textContent=action==='Rejected'
+    ?'Rejecting marks this venue as unsuitable. Your name and today\'s date will be recorded.'
+    :'Cancelling removes this venue from the active workflow. Your name and today\'s date will be recorded.';
+  document.getElementById('cancel-confirm-label').textContent='Confirm '+action;
+  document.getElementById('cancel-reason').value='';
+  document.getElementById('cancel-modal-overlay').classList.add('open');
+  document.getElementById('cancel-reason').focus();
+}
+function closeCancelModal(evt){
+  if(evt&&evt.target!==document.getElementById('cancel-modal-overlay')) return;
+  document.getElementById('cancel-modal-overlay').classList.remove('open');
+  pendingCancel={venueId:'',action:''};
+}
+function confirmCancel(){
+  var reason=document.getElementById('cancel-reason').value.trim();
+  if(!reason){ document.getElementById('cancel-reason').classList.add('is-invalid'); return; }
+  document.getElementById('cancel-reason').classList.remove('is-invalid');
+  document.getElementById('cancel-modal-overlay').classList.remove('open');
+  var venueId=pendingCancel.venueId, action=pendingCancel.action;
+  pendingCancel={venueId:'',action:''};
+  var v=allVenues.find(function(x){ return (x['Venue_ID']||x['ID'])===venueId; });
+  if(!v) return;
+  setLoading(true,'Saving…');
+  google.script.run
+    .withSuccessHandler(function(res){
+      setLoading(false);
+      if(res.permissionDenied){ showToast('🔒 '+res.message,'danger'); }
+      else if(res.success){
+        v['Status']=action; v['Cancellation Reason']=reason;
+        showToast('Venue '+action.toLowerCase()+'.','success');
+        renderPipeline(); renderList(); renderDetail(v);
+      } else { showToast('Failed: '+res.message,'danger'); }
+    })
+    .withFailureHandler(function(err){ setLoading(false); showToast('Error: '+(err.message||err),'danger'); })
+    .cancelVenue(venueId,action,reason);
+}
+
+// ════════════════════════════════════════════════════════════
+//  FORM HELPERS
+// ════════════════════════════════════════════════════════════
+function fld(label,type,id,value,placeholder,highlight){
+  var cls=highlight?'field-current':'';
+  var badge=highlight?' <span class="badge-current-stage">Current Stage</span>':'';
+  if(type==='textarea'){
+    return '<div class="mb-3"><label class="form-label fw-semibold small">'+label+badge+'</label>'+
+      '<textarea id="field-'+id+'" class="form-control '+cls+'" rows="2" placeholder="'+placeholder+'">'+
+      esc(value||'')+'</textarea></div>';
+  }
+  return '<div class="mb-3"><label class="form-label fw-semibold small">'+label+badge+'</label>'+
+    '<input id="field-'+id+'" type="'+type+'" class="form-control '+cls+'" value="'+esc(value||'')+
+    '" placeholder="'+placeholder+'" /></div>';
+}
+function selFld(label,id,value,options,highlight){
+  var cls=highlight?'field-current':'';
+  var badge=highlight?' <span class="badge-current-stage">Current Stage</span>':'';
+  var opts=options.map(function(o){
+    return '<option'+(o===value?' selected':'')+'>'+o+'</option>';
+  }).join('');
+  return '<div class="mb-3"><label class="form-label fw-semibold small">'+label+badge+'</label>'+
+    '<select id="field-'+id+'" class="form-select '+cls+'">'+
+    '<option value="">-- Select --</option>'+opts+'</select></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════════════════
+function esc(str){
+  return String(str==null?'':str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function formatNum(n){ return Number(n).toLocaleString(); }
+function setLoading(on,msg){
+  document.getElementById('loading-overlay').style.display=on?'flex':'none';
+  if(msg) document.getElementById('loading-msg').textContent=msg;
+}
+function showToast(msg,type){
+  var id='t'+Date.now();
+  var icon=type==='success'?'bi-check-circle-fill':'bi-exclamation-triangle-fill';
+  document.getElementById('toast-box').insertAdjacentHTML('beforeend',
+    '<div id="'+id+'" class="toast show align-items-center text-bg-'+type+' border-0 mb-2" role="alert">'+
+    '<div class="d-flex"><div class="toast-body"><i class="bi '+icon+' me-2"></i>'+msg+'</div>'+
+    '<button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="document.getElementById(\''+id+'\').remove()"></button>'+
+    '</div></div>');
+  setTimeout(function(){ var el=document.getElementById(id); if(el) el.remove(); },5000);
+}
+</script>
+</body>
+</html>
